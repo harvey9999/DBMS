@@ -1,0 +1,118 @@
+This following command lines are sued to import JSON files into PostgreSQL
+
+postgres=# create unlogged table business_import (doc json);
+CREATE TABLE
+postgres=# create unlogged table user_import (doc json);
+CREATE TABLE
+postgres=# v
+postgres-# create unlogged table review_import (doc json);
+ERROR:  syntax error at or near "v"
+LINE 1: v
+        ^
+postgres=# create unlogged table review_import (doc json);
+CREATE TABLE
+postgres=# create unlogged table review_import (doc json);
+ERROR:  relation "review_import" already exists
+postgres=# \copy business_import from '/mnt/betterbus.json';
+COPY 188593
+postgres=# \copy user_import from '/mnt/betteru.json';
+COPY 1518169
+postgres=# \copy review_import from '/mnt/betterr.json';
+COPY 5996996
+postgres=# CREATE TABLE business(
+postgres(#                          business_id char(22),
+postgres(#                          name varchar,
+postgres(#                          address varchar,
+postgres(#                          city varchar,
+postgres(#                          state varchar,
+postgres(#                          postal_code varchar,
+postgres(#                          stars float,
+postgres(#                          is_open numeric(1),
+postgres(#                          review_count numeric,
+postgres(#                          PRIMARY KEY (business_id));
+CREATE TABLE
+postgres=# CREATE TABLE users(
+postgres(#                       user_id char(22),
+postgres(#                       name varchar,
+postgres(#                       review_count numeric,
+postgres(#                       average_stars float,
+postgres(#                       PRIMARY KEY (user_id));
+CREATE TABLE
+postgres=# CREATE TABLE elite_users(
+postgres(#                             user_id char(22),
+postgres(#                             elite INTEGER,
+postgres(#                             FOREIGN KEY (user_id) REFERENCES users(user_id));
+CREATE TABLE
+postgres=# CREATE TABLE review(
+postgres(#                        review_id char(22),
+postgres(#                        user_id char(22),
+postgres(#                        business_id char(22),
+postgres(#                        stars integer,
+postgres(#                        useful integer,
+postgres(#                        text varchar,
+postgres(#                        year integer,
+postgres(#                        FOREIGN KEY (user_id) REFERENCES users(user_id),
+postgres(#                        FOREIGN KEY (business_id) REFERENCES business(business_id),
+postgres(#                        PRIMARY KEY (review_id));
+CREATE TABLE
+postgres=# insert into business(
+postgres(#     business_id ,
+postgres(#     name ,
+postgres(#     address ,
+postgres(#     city ,
+postgres(#     state ,
+postgres(#     postal_code ,
+postgres(#     stars,
+postgres(#     review_count,
+postgres(#     is_open)
+postgres-# select p.doc->>'business_id' ,
+postgres-#        p.doc->>'name',
+postgres-#        p.doc->>'address',
+postgres-#        p.doc->>'city',
+postgres-#        p.doc->>'state',
+postgres-#        p.doc->>'postal_code',
+postgres-#        (p.doc->>'stars')::float,
+postgres-#        (p.doc->>'review_count')::numeric,
+postgres-#        (p.doc->>'is_open')::numeric
+postgres-# from business_import as p;
+INSERT 0 188593
+postgres=# insert into users(
+postgres(#     user_id ,
+postgres(#     name ,
+postgres(#     review_count ,
+postgres(#     average_stars)
+postgres-# select p.doc->>'user_id' ,
+postgres-#        p.doc->>'name',
+postgres-#        (p.doc->>'review_count')::integer,
+postgres-#        (p.doc->>'average_stars')::float
+postgres-# from user_import as p;
+INSERT 0 1518169
+postgres=# insert into elite_users(
+postgres(#     user_id,
+postgres(#     elite)
+postgres-# select p.doc->>'user_id' id, regexp_split_to_table(p.doc->>'elite', ',')::int as elite
+postgres-# from user_import as p
+postgres-# where p.doc->>'elite' != 'None';
+INSERT 0 222353
+postgres=# insert into review(
+postgres(#                        review_id ,
+postgres(#                        user_id ,
+postgres(#                        business_id ,
+postgres(#                        stars ,
+postgres(#                        useful ,
+postgres(#                        text,
+postgres(#                        year
+postgres(#                     )
+postgres-# select p.doc->>'review_id' ,
+postgres-#        p.doc->>'user_id',
+postgres-#        p.doc->>'business_id',
+postgres-#        (p.doc->>'stars')::float,
+postgres-#        (p.doc->>'useful')::integer,
+postgres-#        p.doc ->> 'text',
+postgres-#        date_part('year', CAST(p.doc->>'date' AS DATE))
+postgres-# from review_import as p;
+INSERT 0 5996996
+postgres=# SHOW data_directory
+postgres-# ^C
+postgres=# ^C
+postgres=#
